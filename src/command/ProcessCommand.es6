@@ -38,7 +38,7 @@ export class ProcessCommand extends Command{
         if(this.commands.length > 0) {
             this.execute();
         }else {
-            //super.execute();
+            this.method.apply(this.scope);
         }
     }
 

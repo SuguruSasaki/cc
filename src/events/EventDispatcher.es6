@@ -57,4 +57,4 @@ export class EventDispatcher {
 
 }
 
-namespace("EventDispatcher", EventDispatcher);
+namespace("EventDispatcher_global", EventDispatcher);

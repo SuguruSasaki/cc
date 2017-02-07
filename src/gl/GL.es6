@@ -24,8 +24,13 @@ export class GL {
     /**
      *
      */
-    clearStage(){
+    clear(){
         this.gl.clear(this.gl.COLOR_BUFFER_BIT);
+    }
+
+
+    createShader(type){
+        return this.gl.createShader(type);
     }
 }
 
