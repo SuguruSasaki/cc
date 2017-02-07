@@ -12,7 +12,11 @@ var _namespace = require('../namespace.es6');
 
 var _GL = require('../gl/GL.es6');
 
-var _AsyncCommand = require('../command/AsyncCommand.es6');
+var _ShaderBuilder = require('../gl/shader/ShaderBuilder.es6');
+
+var _ProgramBuilder = require('../gl/shader/ProgramBuilder.es6');
+
+var _BufferBuilder = require('../gl/shader/BufferBuilder.es6');
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -26,15 +30,23 @@ var C2App = exports.C2App = function () {
         _classCallCheck(this, C2App);
 
         this.stage = document.getElementById(stageID);
-        this.gl = new _GL.GL(this.getContext());
+
+        this.vertexShader = null;
+        this.fragmentShader = null;
+        this.program = null;
     }
 
-    /**
-     * Set fullscreen
-     */
-
-
     _createClass(C2App, [{
+        key: 'init',
+        value: function init() {
+            this.gl = new _GL.GL(this.getContext());
+        }
+
+        /**
+         * Set fullscreen
+         */
+
+    }, {
         key: 'enableFullScreen',
         value: function enableFullScreen() {
             this.stage.width = window.innerWidth;
@@ -51,6 +63,30 @@ var C2App = exports.C2App = function () {
         value: function getContext() {
             return this.stage.getContext("webgl") || this.stage.getContext("experimental-webgl");
         }
+    }, {
+        key: 'addVertexShader',
+        value: function addVertexShader(source) {
+            var shaderBuilder = new _ShaderBuilder.ShaderBuilder(this.gl.gl);
+            this.vertexShader = shaderBuilder.buildVertexShader(source);
+        }
+    }, {
+        key: 'addFragmentShader',
+        value: function addFragmentShader(source) {
+            var shaderBuilder = new _ShaderBuilder.ShaderBuilder(this.gl.gl);
+            this.fragmentShader = shaderBuilder.buildFragmentShader(source);
+        }
+    }, {
+        key: 'createProgram',
+        value: function createProgram() {
+            var programBuilder = new _ProgramBuilder.ProgramBuilder(this.gl.gl);
+            this.program = programBuilder.build(this.vertexShader, this.fragmentShader);
+        }
+    }, {
+        key: 'createBuffer',
+        value: function createBuffer(vertices) {
+            var bufferBuilder = new _BufferBuilder.BufferBuilder(this.gl.gl);
+            bufferBuilder.build(vertices);
+        }
     }]);
 
     return C2App;
@@ -58,7 +94,7 @@ var C2App = exports.C2App = function () {
 
 (0, _namespace.namespace)("C2App", C2App);
 
-},{"../command/AsyncCommand.es6":3,"../gl/GL.es6":9,"../namespace.es6":10}],2:[function(require,module,exports){
+},{"../gl/GL.es6":10,"../gl/shader/BufferBuilder.es6":11,"../gl/shader/ProgramBuilder.es6":12,"../gl/shader/ShaderBuilder.es6":13,"../namespace.es6":14}],2:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -70,6 +106,8 @@ var _createClass = function () { function defineProperties(target, props) { for 
 
 var _namespace = require('./namespace.es6');
 
+var _EnterFrameBeacon = require('./utils/EnterFrameBeacon.es6');
+
 var _C2App = require('./app/C2App.es6');
 
 var _Command = require('./command/Command.es6');
@@ -79,6 +117,8 @@ var _AsyncCommand = require('./command/AsyncCommand.es6');
 var _ProcessCommand = require('./command/ProcessCommand.es6');
 
 var _Loader = require('./net/Loader.es6');
+
+var _Triangle = require('./geom/primitive/Triangle');
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -106,7 +146,7 @@ var C2 = exports.C2 = function () {
 
 (0, _namespace.namespace_global)("C2", C2);
 
-},{"./app/C2App.es6":1,"./command/AsyncCommand.es6":3,"./command/Command.es6":4,"./command/ProcessCommand.es6":5,"./namespace.es6":10,"./net/Loader.es6":11}],3:[function(require,module,exports){
+},{"./app/C2App.es6":1,"./command/AsyncCommand.es6":3,"./command/Command.es6":4,"./command/ProcessCommand.es6":5,"./geom/primitive/Triangle":9,"./namespace.es6":14,"./net/Loader.es6":15,"./utils/EnterFrameBeacon.es6":17}],3:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -168,7 +208,7 @@ var AsyncCommand = exports.AsyncCommand = function (_Command) {
 
 (0, _namespace.namespace)("AsyncCommand", AsyncCommand);
 
-},{"../namespace.es6":10,"../utils/Delegate.es6":12,"./Command.es6":4}],4:[function(require,module,exports){
+},{"../namespace.es6":14,"../utils/Delegate.es6":16,"./Command.es6":4}],4:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -232,7 +272,7 @@ var Command = exports.Command = function () {
 
 (0, _namespace.namespace)("Command", Command);
 
-},{"../events/Event.es6":6,"../events/EventDispatcher.es6":7,"../namespace.es6":10}],5:[function(require,module,exports){
+},{"../events/Event.es6":6,"../events/EventDispatcher.es6":7,"../namespace.es6":14}],5:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -290,7 +330,7 @@ var ProcessCommand = exports.ProcessCommand = function (_Command) {
             if (this.commands.length > 0) {
                 this.execute();
             } else {
-                //super.execute();
+                this.method.apply(this.scope);
             }
         }
     }]);
@@ -300,7 +340,7 @@ var ProcessCommand = exports.ProcessCommand = function (_Command) {
 
 (0, _namespace.namespace)("ProcessCommand", ProcessCommand);
 
-},{"../namespace.es6":10,"../utils/Delegate.es6":12,"./Command.es6":4}],6:[function(require,module,exports){
+},{"../namespace.es6":14,"../utils/Delegate.es6":16,"./Command.es6":4}],6:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -322,7 +362,7 @@ Event.COMPLETE = Symbol();
 
 (0, _namespace.namespace)("Event", Event);
 
-},{"../namespace.es6":10}],7:[function(require,module,exports){
+},{"../namespace.es6":14}],7:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -406,9 +446,9 @@ var EventDispatcher = exports.EventDispatcher = function () {
     return EventDispatcher;
 }();
 
-(0, _namespace.namespace)("EventDispatcher", EventDispatcher);
+(0, _namespace.namespace)("EventDispatcher_global", EventDispatcher);
 
-},{"../namespace.es6":10}],8:[function(require,module,exports){
+},{"../namespace.es6":14}],8:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -443,7 +483,27 @@ IOErrorEvent.IO_ERROR = Symbol();
 
 (0, _namespace.namespace)("IOErrorEvent", IOErrorEvent);
 
-},{"../namespace.es6":10}],9:[function(require,module,exports){
+},{"../namespace.es6":14}],9:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+exports.Triangle = undefined;
+
+var _namespace = require("../../namespace");
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+var Triangle = exports.Triangle = function Triangle() {
+    _classCallCheck(this, Triangle);
+
+    this.vertices = new Float32Array([0.0, 0.5, -0.5, -0.5, 0.5, -0.5]);
+};
+
+(0, _namespace.namespace)("Triangle", Triangle);
+
+},{"../../namespace":14}],10:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -491,9 +551,14 @@ var GL = exports.GL = function () {
          */
 
     }, {
-        key: "clearStage",
-        value: function clearStage() {
+        key: "clear",
+        value: function clear() {
             this.gl.clear(this.gl.COLOR_BUFFER_BIT);
+        }
+    }, {
+        key: "createShader",
+        value: function createShader(type) {
+            return this.gl.createShader(type);
         }
     }]);
 
@@ -502,7 +567,183 @@ var GL = exports.GL = function () {
 
 (0, _namespace.namespace)("GL", GL);
 
-},{"../namespace":10}],10:[function(require,module,exports){
+},{"../namespace":14}],11:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+exports.BufferBuilder = undefined;
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+var _namespace = require("../../namespace.es6");
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+var BufferBuilder = exports.BufferBuilder = function () {
+
+    /**
+     * Constractor
+     * @param context
+     */
+    function BufferBuilder(context) {
+        _classCallCheck(this, BufferBuilder);
+
+        this.gl = context;
+    }
+
+    _createClass(BufferBuilder, [{
+        key: "build",
+        value: function build(vertices) {
+            var vertexBuffer = this.gl.createBuffer();
+            if (!vertexBuffer) {
+                throw new Error("バッファオブジェクトの生成に失敗");
+            }
+            this.gl.bindBuffer(this.gl.ARRAY_BUFFER, vertexBuffer);
+            this.gl.bufferData(this.gl.ARRAY_BUFFER, vertices, this.gl.STATIC_DRAW);
+        }
+    }]);
+
+    return BufferBuilder;
+}();
+
+(0, _namespace.namespace)("BufferBuilder", BufferBuilder);
+
+},{"../../namespace.es6":14}],12:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+exports.ProgramBuilder = undefined;
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+var _namespace = require("../../namespace.es6");
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+var ProgramBuilder = exports.ProgramBuilder = function () {
+
+    /**
+     * Constractor
+     * @param context
+     */
+    function ProgramBuilder(context) {
+        _classCallCheck(this, ProgramBuilder);
+
+        this.gl = context;
+    }
+
+    /**
+     * Create Program
+     * @param vs
+     * @param fs
+     * @returns {*}
+     */
+
+
+    _createClass(ProgramBuilder, [{
+        key: "build",
+        value: function build(vs, fs) {
+            var program = this.gl.createProgram();
+            this.gl.attachShader(program, vs);
+            this.gl.attachShader(program, fs);
+            this.gl.linkProgram(program);
+
+            if (this.gl.getProgramParameter(program, this.gl.LINK_STATUS)) {
+                this.gl.useProgram(program);
+                return program;
+            }
+            throw new Error(this.gl.getProgramInfoLog(program));
+        }
+    }]);
+
+    return ProgramBuilder;
+}();
+
+(0, _namespace.namespace)("ProgramBuilder", ProgramBuilder);
+
+},{"../../namespace.es6":14}],13:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+exports.ShaderBuilder = undefined;
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+var _namespace = require("../../namespace.es6");
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+var ShaderBuilder = exports.ShaderBuilder = function () {
+
+    /**
+     * Constractor
+     * @param context
+     */
+    function ShaderBuilder(context) {
+        _classCallCheck(this, ShaderBuilder);
+
+        this.gl = context;
+    }
+
+    /**
+     * Create Vertex Shader
+     * @param source
+     * @returns {*}
+     */
+
+
+    _createClass(ShaderBuilder, [{
+        key: "buildVertexShader",
+        value: function buildVertexShader(source) {
+            return this.__build__(this.gl.VERTEX_SHADER, source);
+        }
+
+        /**
+         * Create Fragment Shader
+         * @param source
+         * @returns {*}
+         */
+
+    }, {
+        key: "buildFragmentShader",
+        value: function buildFragmentShader(source) {
+            return this.__build__(this.gl.FRAGMENT_SHADER, source);
+        }
+
+        /**
+         * Create Shader instance
+         * @param type
+         * @param source
+         * @returns {*}
+         * @private
+         */
+
+    }, {
+        key: "__build__",
+        value: function __build__(type, source) {
+            var shader = this.gl.createShader(type);
+            this.gl.shaderSource(shader, source);
+            this.gl.compileShader(shader);
+
+            if (this.gl.getShaderParameter(shader, this.gl.COMPILE_STATUS)) {
+                return shader;
+            }
+            throw new Error("Shaderのコンパイルに失敗しました。");
+        }
+    }]);
+
+    return ShaderBuilder;
+}();
+
+(0, _namespace.namespace)("ShaderBuilder", ShaderBuilder);
+
+},{"../../namespace.es6":14}],14:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -527,7 +768,7 @@ var namespace_global = exports.namespace_global = function namespace_global(clas
   global[className] = myClass;
 };
 
-},{}],11:[function(require,module,exports){
+},{}],15:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -627,7 +868,7 @@ var Loader = exports.Loader = function () {
 
 (0, _namespace.namespace)("Loader", Loader);
 
-},{"../events/Event.es6":6,"../events/EventDispatcher.es6":7,"../events/IOErrorEvent.es6":8,"../namespace.es6":10,"../utils/Delegate.es6":12}],12:[function(require,module,exports){
+},{"../events/Event.es6":6,"../events/EventDispatcher.es6":7,"../events/IOErrorEvent.es6":8,"../namespace.es6":14,"../utils/Delegate.es6":16}],16:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -661,4 +902,87 @@ var Delegate = exports.Delegate = function () {
 
 (0, _namespace.namespace_global)("Delegate", Delegate);
 
-},{"../namespace.es6":10}]},{},[2]);
+},{"../namespace.es6":14}],17:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+exports.EnterFrameBeacon = undefined;
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+var _namespace = require("../namespace");
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+var EnterFrameBeacon = exports.EnterFrameBeacon = function () {
+    function EnterFrameBeacon() {
+        _classCallCheck(this, EnterFrameBeacon);
+
+        throw new Error("EnterFrameBeacon can't create instance!!");
+    }
+
+    /**
+     * initialize
+     */
+
+
+    _createClass(EnterFrameBeacon, null, [{
+        key: "init",
+        value: function init() {
+            EnterFrameBeacon.isInitialize = true;
+        }
+
+        /**
+         *
+         * @param listener
+         */
+
+    }, {
+        key: "addListener",
+        value: function addListener(listener) {
+            EnterFrameBeacon.__checkInitialize__();
+            EnterFrameBeacon.listeners.push(listener);
+        }
+    }, {
+        key: "start",
+        value: function start() {
+            EnterFrameBeacon.__checkInitialize__();
+            requestAnimationFrame(EnterFrameBeacon.__update__);
+        }
+    }, {
+        key: "stop",
+        value: function stop() {
+            EnterFrameBeacon.__checkInitialize__();
+            cancelAnimationFrame(EnterFrameBeacon.__update__);
+        }
+    }, {
+        key: "__update__",
+        value: function __update__() {
+            var len = EnterFrameBeacon.listeners.length;
+            for (var i = 0; i < len; ++i) {
+                EnterFrameBeacon.listeners[i]();
+            }
+            requestAnimationFrame(EnterFrameBeacon.__update__);
+        }
+    }, {
+        key: "__checkInitialize__",
+        value: function __checkInitialize__() {
+            if (!EnterFrameBeacon.isInitialize) throw new Error("EnterFrameBeaconb is not initialized.");
+        }
+    }]);
+
+    return EnterFrameBeacon;
+}();
+
+//-----------------------------------------
+// CLASS PROPERTY
+//-----------------------------------------
+
+EnterFrameBeacon.isInitialize = false;
+EnterFrameBeacon.listeners = [];
+
+(0, _namespace.namespace_global)("EnterFrameBeacon", EnterFrameBeacon);
+
+},{"../namespace":14}]},{},[2]);

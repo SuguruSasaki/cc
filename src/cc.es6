@@ -1,9 +1,11 @@
 import { namespace_global } from './namespace.es6';
+import { EnterFrameBeacon } from './utils/EnterFrameBeacon.es6';
 import { C2App } from './app/C2App.es6';
 import { Command } from './command/Command.es6';
 import { AsyncCommand } from './command/AsyncCommand.es6';
 import { ProcessCommand } from './command/ProcessCommand.es6';
 import { Loader } from './net/Loader.es6';
+import { C2Triangle } from './geom/primitive/Triangle';
 
 
 export class C2 {

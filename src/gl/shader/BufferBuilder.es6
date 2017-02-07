@@ -11,13 +11,8 @@ export class BufferBuilder {
         this.gl = context;
     }
 
-    /**
-     * Create Buffer
-     * @param vs
-     * @param fs
-     * @returns {*}
-     */
-    build(vs, fs){
+
+    build(vertices){
         var vertexBuffer = this.gl.createBuffer();
         if(!vertexBuffer) {
             throw new Error("バッファオブジェクトの生成に失敗");
