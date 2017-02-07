@@ -15,7 +15,7 @@ export class EventDispatcher {
      * Dispose
      */
     dispose(){
-
+        this.listeners = null;
     }
 
 
@@ -47,6 +47,7 @@ export class EventDispatcher {
      * @param event
      */
     broadcast(event){
+        if(this.listeners[event.type] == null) return;
         var observers = this.listeners[event.type];
         for(var i = 0; i < observers.length; ++i){
             observers[i](event);

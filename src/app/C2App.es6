@@ -1,5 +1,6 @@
 import  { namespace } from '../namespace.es6';
 import  { GL } from '../gl/GL.es6';
+import  { AsyncCommand } from '../command/AsyncCommand.es6';
 
 export class C2App {
 
@@ -10,6 +11,8 @@ export class C2App {
     constructor(stageID){
         this.stage = document.getElementById(stageID);
         this.gl    = new GL(this.getContext());
+
+
     }
 
     /**
